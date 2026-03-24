@@ -36,7 +36,11 @@
                 <a href="#trayectoria" class="text-sm font-medium hover:text-indigo-600 transition-colors">Trayectoria</a>
                 <a href="#investigacion" class="text-sm font-medium hover:text-indigo-600 transition-colors">Investigación</a>
                 <a href="#proyectos" class="text-sm font-medium hover:text-indigo-600 transition-colors">Proyectos</a>
+                <button @click="$dispatch('toggle-chatbot')" class="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1">
+                    <i data-lucide="message-square" class="w-4 h-4"></i> Chatbot
+                </button>
                 @auth
+
                     <a href="/admin" class="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors">Panel Control</a>
                 @else
                     <a href="/admin/login" class="text-sm font-medium hover:text-indigo-600 transition-colors">Acceso</a>
@@ -75,7 +79,7 @@
                     <div class="absolute -bottom-4 -left-4 w-24 h-24 bg-blue-100 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse delay-700"></div>
                     
                     <img id="profile-img" 
-                         src="img\oscar.jpeg" 
+                         src="{{ asset('img/oscar.jpeg') }}" 
                          alt="Dr. Oscar Rogelio Caloca Osorio"
                          class="w-full h-top rounded-2xl object-cover border-2 border-white relative z-10"
                          onerror="handleImageError()">
@@ -225,10 +229,17 @@
         </div>
     </footer>
 
+    <livewire:chatbot />
     @livewireScripts
     <script>
         // Inicializar iconos de Lucide
         lucide.createIcons();
+
+        // Escuchar evento para abrir chatbot desde el menú
+        window.addEventListener('toggle-chatbot', () => {
+             const event = new CustomEvent('click');
+             document.getElementById('chatbot-trigger').dispatchEvent(event);
+        });
 
         // Controlar el efecto de scroll en la barra de navegación
         window.addEventListener('scroll', () => {
