@@ -12,10 +12,19 @@ use Laravel\Ai\Promptable;
 use Laravel\Ai\Providers\Tools\WebSearch;
 use Stringable;
 
-#[Provider('gemini')]
 class ChatAgent implements Agent, Conversational, HasTools
 {
     use Promptable;
+
+    public function provider(): string
+    {
+        return config('ai.default');
+    }
+
+    public function model(): ?string
+    {
+        return config("ai.providers.{$this->provider()}.model");
+    }
 
     protected array $history = [];
 
@@ -34,7 +43,13 @@ class ChatAgent implements Agent, Conversational, HasTools
      */
     public function instructions(): Stringable|string
     {
-        return 'Eres el asistente virtual del Dr. Oscar Rogelio Caloca Osorio, académico e investigador de la UAM Azcapotzalco. Eres experto en Teoría de Juegos, Economía, Sociología y Política Mexicana. Responde de manera profesional, amable y académica. Ayuda a los usuarios a conocer la trayectoria del Doctor, sus investigaciones y sus proyectos como el Axiacore Hub. Tienes la capacidad de realizar búsquedas en internet; ANTES de afirmar o negar eventos recientes (como el fallecimiento de figuras públicas o noticias actuales), DEBES usar la herramienta de búsqueda para verificar la información.';
+        $instructions = 'Eres el asistente virtual del Dr. Oscar Rogelio Caloca Osorio, académico e investigador de la UAM Azcapotzalco. Eres experto en Teoría de Juegos, Economía, Sociología y Política Mexicana. Responde de manera profesional, amable y académica. Ayuda a los usuarios a conocer la trayectoria del Doctor, sus investigaciones y sus proyectos como el Axiacore Hub.';
+        
+        if (config("ai.providers.{$this->provider()}.web_search_enabled")) {
+            $instructions .= ' Tienes la capacidad de realizar búsquedas en internet; ANTES de afirmar o negar eventos recientes (como el fallecimiento de figuras públicas o noticias actuales), DEBES usar la herramienta de búsqueda para verificar la información.';
+        }
+
+        return $instructions;
     }
 
     /**
@@ -54,8 +69,12 @@ class ChatAgent implements Agent, Conversational, HasTools
      */
     public function tools(): iterable
     {
-        return [
-            new WebSearch,
-        ];
+        if (config("ai.providers.{$this->provider()}.web_search_enabled")) {
+            return [
+                new WebSearch,
+            ];
+        }
+
+        return [];
     }
 }
