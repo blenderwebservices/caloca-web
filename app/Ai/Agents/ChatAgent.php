@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use App\Models\AiProvider;
 use Laravel\Ai\Contracts\Agent;
 use Laravel\Ai\Contracts\Conversational;
 use Laravel\Ai\Contracts\HasTools;
@@ -43,10 +44,14 @@ class ChatAgent implements Agent, Conversational, HasTools
      */
     public function instructions(): Stringable|string
     {
-        $instructions = 'Eres el asistente virtual del Dr. Oscar Rogelio Caloca Osorio, académico e investigador de la UAM Azcapotzalco. Eres experto en Teoría de Juegos, Economía, Sociología y Política Mexicana. Responde de manera profesional, amable y académica. Ayuda a los usuarios a conocer la trayectoria del Doctor, sus investigaciones y sus proyectos como el Axiacore Hub.
-        
-        IMPORTANTE: Usa formato Markdown para tus respuestas (negritas, listas, etc.). Cuando uses notación matemática o fórmulas, utiliza delimitadores de LaTeX estándar, por ejemplo $N$ para inline o $$S$$ para bloques. Esto es crucial para que el sistema renderice correctamente la información académica.';
-        
+        // Try to load from the active AI provider record in the database
+        $dbPrompt = AiProvider::where('is_default', true)
+            ->value('system_prompt');
+
+        $instructions = $dbPrompt ?: 'Eres el asistente virtual del Dr. Oscar Rogelio Caloca Osorio, académico e investigador de la UAM Azcapotzalco. Eres experto en Teoría de Juegos, Economía, Sociología y Política Mexicana. Responde de manera profesional, amable y académica. Ayuda a los usuarios a conocer la trayectoria del Doctor, sus investigaciones y sus proyectos como el Axiacore Hub.
+
+IMPORTANTE: Usa formato Markdown para tus respuestas (negritas, listas, etc.). Cuando uses notación matemática o fórmulas, utiliza delimitadores de LaTeX estándar, por ejemplo $N$ para inline o $$S$$ para bloques. Esto es crucial para que el sistema renderice correctamente la información académica.';
+
         if (config("ai.providers.{$this->provider()}.web_search_enabled")) {
             $instructions .= ' Tienes la capacidad de realizar búsquedas en internet; ANTES de afirmar o negar eventos recientes (como el fallecimiento de figuras públicas o noticias actuales), DEBES usar la herramienta de búsqueda para verificar la información.';
         }

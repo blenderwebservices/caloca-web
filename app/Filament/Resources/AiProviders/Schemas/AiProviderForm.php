@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AiProviders\Schemas;
 
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
@@ -42,6 +43,11 @@ class AiProviderForm
                 TextInput::make('model')
                     ->label('Modelo')
                     ->required(),
+                Textarea::make('system_prompt')
+                    ->label('System Prompt')
+                    ->helperText('Instrucciones del sistema para este modelo. Si se deja vacío, se usarán las instrucciones por defecto del agente.')
+                    ->rows(8)
+                    ->columnSpanFull(),
                 Toggle::make('is_default')
                     ->label('¿Establecer como prederminado?')
                     ->helperText('Esta configuración será la que use el Chatbot por defecto.')
