@@ -3,6 +3,7 @@
 use App\Ai\Agents\ChatAgent;
 use Livewire\Component;
 use Laravel\Ai\Messages\Message;
+use Illuminate\Support\Str;
 
 new class extends Component {
     public $isOpen = false;
@@ -70,6 +71,20 @@ new class extends Component {
 ?>
 
 <div class="fixed bottom-6 right-6 z-[100] flex flex-col items-end" x-data="{ open: @entangle('isOpen') }">
+    <!-- KaTeX for math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        .prose-chat p { margin-bottom: 0.5rem; }
+        .prose-chat p:last-child { margin-bottom: 0; }
+        .prose-chat ul, .prose-chat ol { margin-left: 1.25rem; margin-bottom: 0.5rem; list-style-type: disc; }
+        .prose-chat li { margin-bottom: 0.25rem; }
+        .prose-chat strong { font-weight: 700; color: #0f172a; }
+        .prose-chat em { font-style: italic; }
+        .katex { font-size: 1.1em; }
+    </style>
     <!-- Chat Window -->
     <div x-show="open" 
          x-transition:enter="transition ease-out duration-300 transform"
@@ -90,7 +105,8 @@ new class extends Component {
                 </div>
                 <div>
                     <h4 class="font-bold text-sm">Dr. Oscar Rogelio Caloca</h4>
-                    <span class="text-[10px] opacity-80">En línea (Asistente IA)</span>
+                    <span class="text-[10px] opacity-80" wire:loading.remove wire:target="sendMessage">En línea (Asistente IA)</span>
+                    <span class="text-[10px] opacity-80 animate-pulse" wire:loading wire:target="sendMessage" x-cloak>Escribiendo...</span>
                 </div>
             </div>
             <button @click="open = false" class="hover:bg-white/10 p-1 rounded-full transition-colors">
@@ -107,7 +123,9 @@ new class extends Component {
             @foreach($messages as $msg)
                 <div class="flex {{ $msg['role'] === 'user' ? 'justify-end' : 'justify-start' }}">
                     <div class="max-w-[85%] rounded-2xl p-3 shadow-sm relative {{ $msg['role'] === 'user' ? 'bg-[#dcf8c6] rounded-tr-none' : 'bg-white rounded-tl-none' }}">
-                        <p class="text-sm text-slate-800 leading-relaxed">{{ $msg['content'] }}</p>
+                        <div class="text-sm text-slate-800 leading-relaxed prose-chat">
+                            {!! Str::markdown($msg['content']) !!}
+                        </div>
                         <div class="flex justify-end gap-1 mt-1">
                             <span class="text-[9px] text-slate-400">{{ $msg['time'] }}</span>
                             @if($msg['role'] === 'user')
@@ -117,6 +135,15 @@ new class extends Component {
                     </div>
                 </div>
             @endforeach
+
+            <!-- Typing Indicator -->
+            <div wire:loading wire:target="sendMessage" class="flex justify-start" x-init="$watch('messages', () => { if ($el.style.display !== 'none') { $nextTick(() => { $el.closest('#chat-messages').scrollTop = $el.closest('#chat-messages').scrollHeight }) } })">
+                <div class="bg-white rounded-2xl rounded-tl-none p-3 shadow-sm flex gap-1 items-center">
+                    <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
+                </div>
+            </div>
         </div>
 
         <!-- Input Area -->
@@ -129,8 +156,12 @@ new class extends Component {
                           class="w-full bg-transparent border-0 focus:ring-0 py-2 text-sm resize-none"></textarea>
             </div>
             <button wire:click="sendMessage" 
-                    class="w-10 h-10 bg-[#075e54] text-white rounded-full flex items-center justify-center hover:bg-[#128c7e] transition-all shadow-lg active:scale-95">
-                <i data-lucide="send" class="w-5 h-5 ml-0.5"></i>
+                    @click="$nextTick(() => { const chat = document.getElementById('chat-messages'); chat.scrollTop = chat.scrollHeight })"
+                    class="w-10 h-10 bg-[#075e54] text-white rounded-full flex items-center justify-center hover:bg-[#128c7e] transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    wire:loading.attr="disabled"
+                    wire:target="sendMessage">
+                <i data-lucide="send" class="w-5 h-5 ml-0.5" wire:loading.remove wire:target="sendMessage"></i>
+                <div wire:loading wire:target="sendMessage" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             </button>
         </div>
     </div>
@@ -151,9 +182,24 @@ new class extends Component {
 
 @script
 <script>
+    function renderMath() {
+        if (typeof renderMathInElement === 'function') {
+            renderMathInElement(document.getElementById('chat-messages'), {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError : false
+            });
+        }
+    }
+
     $wire.on('message-sent', () => {
         setTimeout(() => {
             lucide.createIcons();
+            renderMath();
             const chatMessages = document.getElementById('chat-messages');
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }, 50);
@@ -162,6 +208,7 @@ new class extends Component {
     $wire.on('chat-opened', () => {
         setTimeout(() => {
             lucide.createIcons();
+            renderMath();
             const chatMessages = document.getElementById('chat-messages');
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }, 50);
