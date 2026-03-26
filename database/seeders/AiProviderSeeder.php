@@ -30,11 +30,14 @@ IMPORTANTE: Usa formato Markdown para tus respuestas (negritas, listas, etc.). C
             return;
         }
 
+        $geminiVendor = \App\Models\AiVendor::where('key', 'gemini')->first();
+        $geminiModel = \App\Models\AiModel::where('key', 'gemini-2.5-flash-lite')->where('ai_vendor_id', optional($geminiVendor)->id)->first();
+
         AiProvider::create([
             'name'               => 'Google Gemini (Default)',
-            'provider'           => 'gemini',
+            'ai_vendor_id'       => $geminiVendor?->id,
             'api_key'            => '',
-            'model'              => 'gemini-2.5-flash-lite',
+            'ai_model_id'        => $geminiModel?->id,
             'is_default'         => true,
             'web_search_enabled' => false,
             'system_prompt'      => self::DEFAULT_SYSTEM_PROMPT,

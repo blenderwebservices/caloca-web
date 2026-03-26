@@ -22,12 +22,12 @@ class AiProvidersTable
                     ->label('Nombre')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('provider')
+                TextColumn::make('vendor.name')
                     ->label('Proveedor')
                     ->badge()
                     ->color('info')
                     ->searchable(),
-                TextColumn::make('model')
+                TextColumn::make('aiModel.name')
                     ->label('Modelo')
                     ->searchable(),
                 IconColumn::make('is_default')

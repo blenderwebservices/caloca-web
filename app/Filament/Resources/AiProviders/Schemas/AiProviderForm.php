@@ -17,22 +17,33 @@ class AiProviderForm
                 TextInput::make('name')
                     ->label('Nombre')
                     ->required(),
-                Select::make('provider')
+                Select::make('ai_vendor_id')
                     ->label('Proveedor IA')
-                    ->options([
-                        'openai' => 'OpenAI',
-                        'gemini' => 'Google Gemini',
-                        'anthropic' => 'Anthropic Claude',
-                        'deepseek' => 'DeepSeek',
-                        'groq' => 'Groq',
-                        'ollama' => 'Ollama',
-                        'mistral' => 'Mistral',
-                        'azure' => 'Azure OpenAI',
-                        'cohere' => 'Cohere',
-                        'openrouter' => 'OpenRouter',
+                    ->relationship('vendor', 'name')
+                    ->createOptionForm([
+                        TextInput::make('name')->required()->label('Nombre (Ej. OpenAI)'),
+                        TextInput::make('key')->required()->label('Clave interna (Ej. openai)'),
+                    ])
+                    ->editOptionForm([
+                        TextInput::make('name')->required()->label('Nombre (Ej. OpenAI)'),
+                        TextInput::make('key')->required()->label('Clave interna (Ej. openai)'),
                     ])
                     ->required()
-                    ->searchable(),
+                    ->searchable()
+                    ->preload()
+                    ->live()
+                    ->suffixActions([
+                        \Filament\Actions\Action::make('deleteVendor')
+                            ->label('Eliminar Proveedor')
+                            ->icon('heroicon-m-trash')
+                            ->color('danger')
+                            ->requiresConfirmation()
+                            ->visible(fn ($state) => filled($state))
+                            ->action(function (Select $component, $state) {
+                                \App\Models\AiVendor::find($state)?->delete();
+                                $component->state(null);
+                            }),
+                    ]),
                 TextInput::make('api_key')
                     ->label('API Key')
                     ->password()
@@ -40,9 +51,43 @@ class AiProviderForm
                 TextInput::make('base_url')
                     ->label('URL Base')
                     ->url(),
-                TextInput::make('model')
+                Select::make('ai_model_id')
                     ->label('Modelo')
-                    ->required(),
+                    ->relationship('aiModel', 'name', function ($query, callable $get) {
+                        $vendorId = $get('ai_vendor_id');
+                        if ($vendorId) {
+                            $query->where('ai_vendor_id', $vendorId);
+                        }
+                    })
+                    ->createOptionForm([
+                        TextInput::make('name')->required()->label('Nombre (Ej. GPT-4o)'),
+                        TextInput::make('key')->required()->label('Identificador (Ej. gpt-4o)'),
+                    ])
+                    ->createOptionAction(
+                        fn (\Filament\Actions\Action $action) => $action->mutateFormDataUsing(function (array $data, callable $get) {
+                            $data['ai_vendor_id'] = $get('ai_vendor_id');
+                            return $data;
+                        })
+                    )
+                    ->editOptionForm([
+                        TextInput::make('name')->required()->label('Nombre (Ej. GPT-4o)'),
+                        TextInput::make('key')->required()->label('Identificador (Ej. gpt-4o)'),
+                    ])
+                    ->required()
+                    ->searchable()
+                    ->preload()
+                    ->suffixActions([
+                        \Filament\Actions\Action::make('deleteModel')
+                            ->label('Eliminar Modelo')
+                            ->icon('heroicon-m-trash')
+                            ->color('danger')
+                            ->requiresConfirmation()
+                            ->visible(fn ($state) => filled($state))
+                            ->action(function (Select $component, $state) {
+                                \App\Models\AiModel::find($state)?->delete();
+                                $component->state(null);
+                            }),
+                    ]),
                 Textarea::make('system_prompt')
                     ->label('System Prompt')
                     ->helperText('Instrucciones del sistema para este modelo. Si se deja vacío, se usarán las instrucciones por defecto del agente.')
